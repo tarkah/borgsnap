@@ -79,8 +79,10 @@ source "$1"
 BORG_PASSPHRASE=$(< "$PASS")
 export BORG_PASSPHRASE
 
-dow=$(date +"%w")
-dom=$(date +"%d")
+doesntexist=0
+
+dow=$(date +%-w)
+dom=$(date +%-d)
 date=$(date +"%Y%m%d")
 
 forcemonth=0
@@ -185,8 +187,8 @@ for i in $FS; do
   if [[ -n $rsyncdir ]]; then
     host=${REMOTE%:*}
     dir=${REMOTE#*:}
-    ssh "$host" test -d "$dir/$pool/$fs"
-    if [[ $? == 1 ]]; then
+    ssh "$host" test -d "$dir/$pool/$fs" || doesntexist=1
+    if [[ $doesntexist == 1 ]]; then
       echo "Initializing rsync $rsyncdir"
       ssh "$host" mkdir -p "$dir/$pool/$fs"
       borg init --encryption=repokey --remote-path=borg1 "$rsyncdir"
@@ -208,7 +210,7 @@ for i in $FS; do
     snapshot "$i" "$label"
     dobackup "$i" "$label"
     purgeold "$i" month "$MONTH_KEEP"
-  elif [[ $forceweek == 1 || $dow -eq 0 ]]; then
+  elif [[ $forceweek == 1 || $dow -eq 1 ]]; then
     label="week-$date"
     snapshot "$i" "$label"
     dobackup "$i" "$label"
